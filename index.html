@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A premium browser-based SQL terminal with full SQL support and persistent localStorage storage.">
+  <title>SQL Terminal</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💾</text></svg>">
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Initializing SQL Engine...</div>
+  </div>
+
+  <!-- Mobile Sidebar Toggle -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="app">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="12" cy="6" rx="8" ry="3"/>
+            <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6"/>
+            <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6"/>
+          </svg>
+          <h1>SQL Terminal</h1>
+        </div>
+      </div>
+
+      <div class="sidebar-content">
+        <!-- Tables Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-header">
+            <span class="sidebar-section-title">Tables</span>
+            <span class="sidebar-badge" id="tableCount">0</span>
+          </div>
+          <div id="tablesList"></div>
+        </div>
+
+        <!-- History Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-header">
+            <span class="sidebar-section-title">History</span>
+            <span class="sidebar-badge" id="historyCount">0</span>
+          </div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-btn" id="exportBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Database
+        </button>
+        <button class="sidebar-btn" id="importBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Import Database
+        </button>
+        <button class="sidebar-btn danger" id="clearHistoryBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          Clear History
+        </button>
+        <input type="file" class="hidden-input" id="importFileInput" accept=".db,.sqlite,.sqlite3">
+      </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main">
+      <!-- Top Bar -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>Query Editor</h2>
+          <div class="connection-status" id="connectionStatus">
+            <div class="status-dot"></div>
+            <span>Connected</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-danger" id="clearOutputBtn">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            Clear Output
+          </button>
+        </div>
+      </div>
+
+      <!-- SQL Editor -->
+      <div class="editor-section">
+        <div class="editor-wrapper">
+          <div class="editor-header">
+            <div class="editor-header-left">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+              <span>SQL</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div class="editor-dot" style="background:var(--accent-red)"></div>
+              <div class="editor-dot" style="background:var(--accent-yellow)"></div>
+              <div class="editor-dot" style="background:var(--accent-green)"></div>
+            </div>
+          </div>
+          <textarea
+            class="sql-textarea"
+            id="sqlEditor"
+            placeholder="Write your SQL query here...&#10;&#10;Example: SELECT * FROM users;"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <button class="btn btn-primary" id="runBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Query
+        </button>
+        <button class="btn btn-secondary" id="formatBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+          Format
+        </button>
+        <button class="btn btn-secondary" id="clearEditorBtn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+          Clear
+        </button>
+        <div class="shortcut-hint">
+          <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-section" id="resultsSection">
+        <div class="welcome-card" id="welcomeCard">
+          <h3>Welcome to SQL Terminal</h3>
+          <p>Execute SQL queries directly in your browser. Your data persists across sessions using localStorage.</p>
+          <div class="quick-queries">
+            <button class="quick-query" data-query="SELECT * FROM users;">SELECT * FROM users</button>
+            <button class="quick-query" data-query="SELECT * FROM products;">SELECT * FROM products</button>
+            <button class="quick-query" data-query="SELECT * FROM orders;">SELECT * FROM orders</button>
+            <button class="quick-query" data-query="PRAGMA table_info(users);">Show Schema</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-bar-left">
+          <div class="status-item" id="statusTables">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span>0 tables</span>
+          </div>
+          <div class="status-item" id="statusSize">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            <span>0 KB</span>
+          </div>
+        </div>
+        <div class="status-bar-right">
+          <div class="status-item" id="statusTime">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Ready</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Schema Modal -->
+  <div class="modal-overlay" id="schemaModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="schemaModalTitle">Table Schema</h3>
+        <button class="modal-close" id="schemaModalClose">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="schemaModalBody"></div>
+    </div>
+  </div>
+
+  <!-- sql.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

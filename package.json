@@ -1,0 +1,6 @@
+{
+  "name": "sql-terminal",
+  "version": "1.0.0",
+  "description": "A premium browser-based SQL terminal with localStorage persistence",
+  "private": true
+}
